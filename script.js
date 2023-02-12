@@ -4,20 +4,24 @@ app.apiKey = "1"
 const $dropdown = $("#dropdown")
 const $cocktailDescription = $("#cocktailDescription")
 
-app.populateDropdown = function () {
-  $.ajax({
-    url: "https://www.thecocktaildb.com/api/json/v1/1/search.php?f=c",
+app.apiCall = function (format) {
+  return $.ajax({
+    url: `https://www.thecocktaildb.com/api/json/v1/1/${format}`,
     method: "GET",
     dataType: "json",
     data: {
       api_key: app.apiKey,
     },
-  }).then(function (response) {
+  })
+}
+
+app.populateDropdown = function () {
+  app.apiCall("search.php?f=c").then(function (response) {
     response.drinks.forEach((individual) => {
       $dropdown.append(
         `
         <option hidden disabled selected value>Please select cocktail</option>
-        <option class="cocktail" value=${individual.idDrink}>${individual.strDrink}</option>
+        <option class="cocktailName" value=${individual.idDrink}>${individual.strDrink}</option>
         `
       )
     })
@@ -31,40 +35,40 @@ app.changeHalnder = function () {
 }
 
 app.getSelectedCocktail = function (cocktailId) {
-  $.ajax({
-    url: `https://www.thecocktaildb.com/api/json/v1/1/lookup.php?i=${cocktailId}`,
-    method: "GET",
-    dataType: "json",
-    data: {
-      api_key: app.apiKey,
-    },
-  }).then(function (data) {
+  app.apiCall(`lookup.php?i=${cocktailId}`).then(function (data) {
     console.log(data)
-    const empty = []
-    for (let i = 1; i <= 15; i++) {
-      if (data.drinks[0].strIngredient + `${i}`) {
-        // console.log(`${data.drinks[0].strIngredient${i}}`)
-        console.log(empty)
-      }
-    }
     const cocktailContent = `
     <div class="imageClass">
-        <img class="cocktailImage" src="${data.drinks[0].strDrinkThumb}" alt="Cocktail">
+        <img class="cocktailImage" src="${
+          data.drinks[0].strDrinkThumb
+        }" alt="Cocktail">
     </div>
     <div class="divide">
         <div class="nameClass">
             <h2>🍸Name: ${data.drinks[0].strDrink}</h2>
         </div>
         <div class="ingredientClass">
-            <h2>🍸Ingredient: if(data.drinks[0].strIngredient1){console.log("test")}</h2>
+            <h2>🍸Ingredient: ${app.getIngredient(data)}</h2>
         </div>
         <div class="instructionClass">
-            <h2>🍸Instruction: </h2>
+            <h2>🍸Instruction: ${data.drinks[0].strInstructions}</h2>
         </div>
     </div>
     `
     $cocktailDescription.append(cocktailContent)
   })
+}
+
+app.getIngredient = function (data) {
+  const objData = Object.keys(data.drinks[0])
+  const match = objData.filter((str) =>
+    str.match(/^strIngredient([0-9]|1[0-5])+/)
+  )
+  const filteredIngredients = match
+    .map((strIngredientNumber) => data.drinks[0][strIngredientNumber])
+    .filter((value) => value != null)
+  console.log(filteredIngredients)
+  return filteredIngredients
 }
 
 app.init = function () {
