@@ -1,80 +1,79 @@
 const app = {}
 
 app.apiKey = "1"
-
 const $dropdown = $("#dropdown")
-const $alcoholPicture = $("#alcoholPicture")
+const $cocktailDescription = $("#cocktailDescription")
 
-// This function populates dropdown
-app.populateDropdown = function () {
-  $.ajax({
-    url: "https://www.thecocktaildb.com/api/json/v1/1/search.php?f=b",
+app.apiCall = function (format) {
+  return $.ajax({
+    url: `https://www.thecocktaildb.com/api/json/v1/1/${format}`,
     method: "GET",
     dataType: "json",
     data: {
       api_key: app.apiKey,
     },
-  }).then(function (response) {
-    response.drinks.forEach(function (data) {
-      const cocktailName = data.strDrink
-      const cocktailId = data.idDrink
-      const htmlToAppend = `
-                <option hidden disabled selected value>-- Select your Cocktail --</option>
-                <option class="cocktailName" value ="${cocktailId}">${cocktailName}</option>
-            `
-      if (data.strIngredient4 && data.strMeasure4) {
-        $dropdown.append(htmlToAppend)
-      }
+  })
+}
+
+app.populateDropdown = function () {
+  app.apiCall("search.php?f=c").then(function (response) {
+    response.drinks.forEach((individual) => {
+      $dropdown.append(
+        `
+        <option hidden disabled selected value>Please select cocktail</option>
+        <option class="cocktailName" value=${individual.idDrink}>${individual.strDrink}</option>
+        `
+      )
     })
   })
 }
-// This function gets the value that we selected
-app.getSelectValue = function () {
-  $dropdown.on("change", function () {
-    const selection = $("option:selected").val()
-    $alcoholPicture.empty()
-    app.getCocktail(selection)
+
+app.changeHalnder = function () {
+  $dropdown.change(function (e) {
+    app.getSelectedCocktail(e.target.value)
+    $cocktailDescription.empty()
   })
 }
-// This function allows us to choose 1 cocktail by id
-app.getCocktail = function (cocktailId) {
-  $.ajax({
-    url: `https://www.thecocktaildb.com/api/json/v1/1/lookup.php?i=${cocktailId}`,
-    method: "GET",
-    dataType: "json",
-    data: {
-      api_key: app.apiKey,
-    },
-  }).then(function (response) {
-    app.displayCocktail(response)
-  })
-}
-// This function allows us to show image, name, ingredient, and instruction
-app.displayCocktail = function (data) {
-  const htmltoAppend2 = `
-        <div class="imageClass">
-            <img class="cocktailImage" src="${data.drinks[0].strDrinkThumb}" alt="Cocktail">
+
+app.getSelectedCocktail = function (cocktailId) {
+  app.apiCall(`lookup.php?i=${cocktailId}`).then(function (data) {
+    const cocktailContent = `
+    <div class="imageClass">
+        <img class="cocktailImage" src="${
+          data.drinks[0].strDrinkThumb
+        }" alt="Cocktail">
+    </div>
+    <div class="divide">
+        <div class="nameClass">
+            <h2>🍸Name: ${data.drinks[0].strDrink}</h2>
         </div>
-        <div class="divide">
-            <div class="nameClass">    
-                <h2>🍸Name: ${data.drinks[0].strDrink}</h2>
-            </div>    
-            <div class="ingredientClass">    
-                <h2>🍸Ingredient: ${data.drinks[0].strIngredient1}( ${data.drinks[0].strMeasure1}), ${data.drinks[0].strIngredient2}( ${data.drinks[0].strMeasure2}), ${data.drinks[0].strIngredient3}( ${data.drinks[0].strMeasure3}), ${data.drinks[0].strIngredient4}( ${data.drinks[0].strMeasure4})</h2>
-            </div>    
-            <div class="instructionClass">    
-                <h2>🍸Instruction: ${data.drinks[0].strInstructions}</h2>
-            </div>
-        </div>        
-        `
-  $alcoholPicture.append(htmltoAppend2)
+        <div class="ingredientClass">
+            <h2>🍸Ingredient: ${app.getIngredient(data)}</h2>
+        </div>
+        <div class="instructionClass">
+            <h2>🍸Instruction: ${data.drinks[0].strInstructions}</h2>
+        </div>
+    </div>
+    `
+    $cocktailDescription.append(cocktailContent)
+  })
+}
+
+app.getIngredient = function (data) {
+  const objData = Object.keys(data.drinks[0])
+  const match = objData.filter((str) =>
+    str.match(/^strIngredient([0-9]|1[0-5])+/)
+  )
+  const filteredIngredients = match
+    .map((strIngredientNumber) => data.drinks[0][strIngredientNumber])
+    .filter((value) => value != null)
+  return filteredIngredients
 }
 
 app.init = function () {
-  app.getCocktail("17222")
   app.populateDropdown()
-  app.getCocktail()
-  app.getSelectValue()
+  app.getSelectedCocktail(12890)
+  app.changeHalnder()
 }
 
 $(function () {
