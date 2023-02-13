@@ -31,12 +31,12 @@ app.populateDropdown = function () {
 app.changeHalnder = function () {
   $dropdown.change(function (e) {
     app.getSelectedCocktail(e.target.value)
+    $cocktailDescription.empty()
   })
 }
 
 app.getSelectedCocktail = function (cocktailId) {
   app.apiCall(`lookup.php?i=${cocktailId}`).then(function (data) {
-    console.log(data)
     const cocktailContent = `
     <div class="imageClass">
         <img class="cocktailImage" src="${
@@ -67,12 +67,12 @@ app.getIngredient = function (data) {
   const filteredIngredients = match
     .map((strIngredientNumber) => data.drinks[0][strIngredientNumber])
     .filter((value) => value != null)
-  console.log(filteredIngredients)
   return filteredIngredients
 }
 
 app.init = function () {
   app.populateDropdown()
+  app.getSelectedCocktail(12890)
   app.changeHalnder()
 }
 
